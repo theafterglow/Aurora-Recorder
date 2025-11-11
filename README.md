@@ -1,6 +1,6 @@
-# 🎙️ SpytoRec – Spotify Track Recorder
+# Aurora Recorder – Spotify Track Recorder
 
-**SpytoRec** is a powerful, CLI-based tool to record your currently playing Spotify tracks in real-time, automatically split them, embed metadata (title, artist, album, cover art), and organize them in your personal music library.
+**Aurora Recorder** is a powerful, CLI-based tool to record your currently playing Spotify tracks in real-time, automatically split them, embed metadata (title, artist, album, cover art), and organize them in your personal music library.
 
 > ✅ Intended strictly for **personal archival use only**.
 
@@ -17,8 +17,8 @@
 
 ## ✨ Features
 
-- 🎵 Real-Time Recording (FLAC or OGG)
-- 🎯 Track Splitting via Spotify API
+- 🎵 Real-Time Recording (FLAC)
+- 🎯 Better support for albums/playlists, now every track is treated like they're singles
 - 🎼 Metadata Embedding: title, artist, album, and cover art
 - ⚙️ Background Finalization for smooth capture
 - 📁 File Organization: Artist/Album/Track
@@ -28,6 +28,8 @@
 - 🖥️ Cross-Platform: Windows, macOS, Linux
 
 ---
+
+The Changes
 
 ## 💻 Installation Guides
 
@@ -40,15 +42,11 @@
 3. Install **VB-Audio Cable** from [vb-audio.com](https://vb-audio.com/Cable/)
 4. Clone the repo and install requirements:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/SpytoRec.git
-   cd SpytoRec
-   pip install -r requirements.txt
+   git clone https://github.com/theafterglow/Aurora_Recorder.git
+   cd Aurora_Recorder
+   python3 -m venv venv
+   venv\Scripts\python aurora_recorder.py (--album/playlist)
    ```
-5. Set Spotify output to **CABLE Input**, and run:
-   ```bash
-   python spytorec.py
-   ```
-
 ---
 
 ### 🍏 macOS
@@ -62,13 +60,13 @@
 4. Set Spotify output to BlackHole in System Preferences > Sound > Output
 5. Clone and install dependencies:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/SpytoRec.git
-   cd SpytoRec
+   git clone https://github.com/theafterglow/Aurora_Recorder.git
+   cd Aurora_Recorder
    pip install -r requirements.txt
    ```
 6. Run the script:
    ```bash
-   python spytorec.py
+   python aurora_recorder.py
    ```
 
 ---
@@ -87,9 +85,9 @@
 3. Set Spotify output to **Monitor of spytorec_sink** using `pavucontrol`
 4. Clone repo and run:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/SpytoRec.git
-   cd SpytoRec
-   python3 spytorec.py
+   git clone https://github.com/YOUR_USERNAME/aurora_recorder.git
+   cd aurora_recorder
+   python3 aurora_recorder.py
    ```
 
 ---
@@ -97,7 +95,7 @@
 ## 🛠️ Usage & CLI
 
 ```bash
-python spytorec.py [COMMAND] [OPTIONS]
+python aurora_recorder.py [COMMAND] [OPTIONS]
 ```
 
 ### ▶️ `record` (or default)
@@ -112,13 +110,6 @@ Tests Spotify API credentials and shows current playback info.
 ---
 
 ## 🧪 Example Commands
-
-```bash
-python spytorec.py                      # default run with config.ini
-python spytorec.py record --format flac --organize
-python spytorec.py list-devices
-python spytorec.py test-auth
-```
 
 ---
 
