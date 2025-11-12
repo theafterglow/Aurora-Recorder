@@ -20,8 +20,6 @@ from aurora_core import (
 import requests
 from mutagen.flac import FLAC, Picture
 
-# ---- FFmpeg / IO ------------------------------------------------------------
-
 def ensure_dir(p: Path) -> None:
     p.mkdir(parents=True, exist_ok=True)
 
@@ -42,7 +40,7 @@ def start_ffmpeg(ffmpeg: str, device: str, dur_s: float, out_path: Path, fmt: st
     ]
     if fmt == 'flac':
         if try_24bit:
-            cmd += ['-sample_fmt', 's32']  # 24-bit effective
+            cmd += ['-sample_fmt', 's32']
         cmd += ['-acodec', 'flac', '-vn']
     else:
         raise ValueError('Only FLAC is supported in this build')
@@ -119,9 +117,6 @@ def embed_flac(audio_path: Path, meta: dict, cover_path: t.Optional[Path]) -> No
     except Exception as e:
         console.print(f"[yellow]Embed error for {audio_path.name}: {e}[/yellow]")
 
-
-# ---- Finalization worker ----------------------------------------------------
-
 def robust_move(src: Path, dst: Path) -> Path:
     """Move/rename even if src is on Windows and was just closed by ffmpeg."""
     dst.parent.mkdir(parents=True, exist_ok=True)
@@ -133,7 +128,6 @@ def robust_move(src: Path, dst: Path) -> Path:
             shutil.move(str(src), str(dst))
             return dst
         except Exception:
-            # Give last chance after a short delay
             time.sleep(0.5)
             shutil.move(str(src), str(dst))
             return dst
@@ -145,7 +139,7 @@ def finalization_worker(ffmpeg_path: str, log_file: Path):
     while not stop_worker_event.is_set() or not finalization_task_queue.empty():
         try:
             task = finalization_task_queue.get(timeout=1)
-        except queue.Empty:  # type: ignore[name-defined]
+        except queue.Empty:
             continue
         try:
             proc: subprocess.Popen = task['process_obj']
@@ -157,7 +151,6 @@ def finalization_worker(ffmpeg_path: str, log_file: Path):
             stop_reason: str = task['stop_reason']
             rewrite_enabled: bool = task.get('rewrite_enabled', True)
 
-            # Ensure process fully stopped
             if proc and proc.poll() is None:
                 try:
                     proc.communicate(timeout=8)
@@ -199,7 +192,7 @@ def finalization_worker(ffmpeg_path: str, log_file: Path):
                 except Exception: pass
                 try:
                     with open(FAILED_TXT, 'a', encoding='utf-8') as f:
-                        f.write(f"{meta.get('artist_str','Unknown Artist')} - {meta.get('name','Unknown Title')}")
+                        f.write(f"{meta.get('artist_str','Unknown Artist')} - {meta.get('name','Unknown Title')}\n")
                 except Exception as e:
                     console.print(f"[yellow]failed_tracks.txt write error: {e}[/yellow]")
                 finalization_task_queue.task_done(); continue
@@ -240,15 +233,12 @@ def finalization_worker(ffmpeg_path: str, log_file: Path):
             except Exception: pass
     console.print("[cyan]Finalization worker stopped.[/cyan]")
 
-
-# ---- Standby (manual mode) --------------------------------------------------
-
 standby_ffmpeg_process = None
 standby_file = None
 
 def ensure_standby(st: Settings):
     global standby_ffmpeg_process, standby_file
-    if standby_ffmpeg_process is None or standby_ffmpeg_process.poll() is not None:  # type: ignore[attr-defined]
+    if standby_ffmpeg_process is None or standby_ffmpeg_process.poll() is not None:
         arm_dir = st['output_directory'] / "__standby__"
         ensure_dir(arm_dir)
         standby_file = arm_dir / f"standby_{int(time.time())}.flac"

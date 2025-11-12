@@ -26,7 +26,6 @@ from aurora_io import (
 )
 from aurora_core import current_track
 
-# Globals reused
 from aurora_core import (
     current_ffmpeg_process,
     current_recording_info,
@@ -88,32 +87,50 @@ def record_one_track_blocking(sp: Spotify, st: Settings) -> None:
         stop_worker_event.clear()
         current_ffmpeg_process = None; current_recording_info = {}
 
-def get_playlist_track_uris(sp: Spotify, playlist_url_or_id: str) -> list[str]:
-    if 'playlist/' in playlist_url_or_id:
-        pl_id = playlist_url_or_id.split('playlist/')[-1].split('?')[0]
-    elif playlist_url_or_id.startswith('spotify:playlist:'):
-        pl_id = playlist_url_or_id.split(':')[-1]
-    else:
-        pl_id = playlist_url_or_id
-    uris: list[str] = []
-    offset = 0
-    while True:
-        page = sp.playlist_items(pl_id, additional_types=['track'], limit=100, offset=offset)
-        items = page.get('items', [])
-        for it in items:
-            tr = it.get('track')
-            if tr and tr.get('id'):
-                uris.append(f"spotify:track:{tr['id']}")
-        if page.get('next'):
-            offset += 100
-        else:
-            break
-    return uris
+def get_spotify_uris(sp: Spotify, url_or_id: str) -> list[str]:
+    try:
+        if 'track/' in url_or_id or url_or_id.startswith('spotify:track:'):
+            track_id = url_or_id.split('track/')[-1].split('?')[0] if 'track/' in url_or_id else url_or_id.split(':')[-1]
+            return [f"spotify:track:{track_id}"]
 
+        if 'playlist/' in url_or_id or url_or_id.startswith('spotify:playlist:'):
+            pl_id = url_or_id.split('playlist/')[-1].split('?')[0] if 'playlist/' in url_or_id else url_or_id.split(':')[-1]
+            uris = []
+            offset = 0
+            while True:
+                page = sp.playlist_items(pl_id, additional_types=['track'], limit=100, offset=offset)
+                items = page.get('items', [])
+                for it in items:
+                    tr = it.get('track')
+                    if tr and tr.get('id'):
+                        uris.append(f"spotify:track:{tr['id']}")
+                if page.get('next'):
+                    offset += 100
+                else:
+                    break
+            return uris
+
+        if 'album/' in url_or_id or url_or_id.startswith('spotify:album:'):
+            album_id = url_or_id.split('album/')[-1].split('?')[0] if 'album/' in url_or_id else url_or_id.split(':')[-1]
+            uris = []
+            offset = 0
+            while True:
+                album = sp.album_tracks(album_id, limit=50, offset=offset)
+                items = album.get('items', [])
+                if not items: break
+                uris += [f"spotify:track:{tr['id']}" for tr in items if tr.get('id')]
+                if album.get('next'): offset += 50
+                else: break
+            return uris
+
+    except Exception as e:
+        console.print(f"[red]Error while parsing Spotify URL: {e}[/red]")
+
+    return []
 
 def play_and_record_playlist(sp: Spotify, playlist_url: str, st: Settings):
     global current_ffmpeg_process, current_recording_info
-    uris = get_playlist_track_uris(sp, playlist_url)
+    uris = get_spotify_uris(sp, playlist_url)
     if not uris:
         console.print('[yellow]Playlist has no playable tracks.[/yellow]'); return
     console.print(f"[green]Sequential mode: {len(uris)} tracks found.[/green]")
@@ -287,7 +304,9 @@ Use only for personal/private purposes and comply with local laws.
     console.print(Panel(disclaimer, title='[bold yellow]Important Notice[/bold yellow]', border_style='yellow', expand=False))
 
     ap = ArgumentParser(description='Record Spotify playback to FLAC (VB-CABLE, Windows friendly)')
-    ap.add_argument('--playlist', '--album', help='Playlist URL/URI to play & record sequentially (program-controlled)')
+    ap.add_argument('track', nargs='?', help='Single Spotify track URL/URI or text file with multiple links')
+    ap.add_argument('--album', help='Spotify album or playlist URL/URI for sequential recording')
+    ap.add_argument('--playlist', help='Spotify playlist or album URL/URI for sequential recording')
     ap.add_argument('--device', help='Override FFmpeg input device (default from config.ini)')
     ap.add_argument('--ffmpeg', help='Override FFmpeg path (default from config.ini)')
     ap.add_argument('--out', help='Override output base directory (default from config.ini)')
@@ -302,12 +321,48 @@ Use only for personal/private purposes and comply with local laws.
 
     sp = get_spotify_client()
 
-    if args.playlist:
-        play_and_record_playlist(sp, args.playlist, st)
-    else:
-        console.print("[cyan]No playlist provided → recording the current track only...[/cyan]")
-        manual_follow_current(sp, st)
-        console.print("[green]Single track recorded. Exiting.[/green]")
+    source = args.album or args.playlist
+    if source:
+        uris = get_spotify_uris(sp, source)
+        if not uris:
+            console.print("[red]No tracks found in album or playlist.[/red]")
+            return
+        console.print(f"[green]Sequential recording: {len(uris)} tracks detected.[/green]")
+        play_and_record_playlist(sp, source, st)
+        return
+
+    if args.track:
+        p = Path(args.track)
+
+        if p.exists() and p.is_file() and p.suffix.lower() == ".txt":
+            blocked_names = {"failed_tracks.txt", "requirements.txt"}
+            if p.name.lower() in blocked_names:
+                console.print(f"[red]'{p.name}' is a reserved internal file and cannot be used as input.[/red]")
+                return
+
+            console.print(f"[cyan]Reading links from {p.name}[/cyan]")
+            with open(p, "r", encoding="utf-8") as f:
+                links = [line.strip() for line in f if line.strip()]
+            console.print(f"[green]{len(links)} link(s) loaded from {p.name}[/green]")
+
+            for i, link in enumerate(links, 1):
+                console.print(f"[yellow]({i}/{len(links)}) Playing {link}[/yellow]")
+                uris = get_spotify_uris(sp, link)
+                if not uris:
+                    console.print(f"[red]Invalid or unsupported link: {link}[/red]")
+                    continue
+                play_and_record_playlist(sp, link, st)
+            return
+
+        uris = get_spotify_uris(sp, args.track)
+        if not uris:
+            console.print("[red]Invalid or unsupported track link.[/red]")
+            return
+        console.print("[green]Single track mode: starting Spotify playback...[/green]")
+        play_and_record_playlist(sp, args.track, st)
+        return
+
+
 
 if __name__ == '__main__':
     try:

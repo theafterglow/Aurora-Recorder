@@ -31,6 +31,8 @@ aurora_metadata.jsonl
 *.rewrite_temp
 .cache-aurora
 *_cover.jpg
+*.txt
+!requirements.txt
 .vscode/
 .idea/
 *.sublime-project
