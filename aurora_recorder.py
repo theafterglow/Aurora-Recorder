@@ -132,24 +132,28 @@ def play_and_record_playlist(sp: Spotify, playlist_url: str, st: Settings):
     global current_ffmpeg_process, current_recording_info
     uris = get_spotify_uris(sp, playlist_url)
     if not uris:
-        console.print('[yellow]Playlist has no playable tracks.[/yellow]'); return
+        console.print('[yellow]Playlist has no playable tracks.[/yellow]')
+        return
     console.print(f"[green]Sequential mode: {len(uris)} tracks found.[/green]")
 
     try:
         devices = sp.devices().get('devices', [])
         active = next((d for d in devices if d.get('is_active')), None)
         if not active and devices:
-            sp.transfer_playback(devices[0]['id'], force_play=True); time.sleep(0.8)
+            sp.transfer_playback(devices[0]['id'], force_play=True)
+            time.sleep(0.8)
     except Exception:
         pass
 
     for i, uri in enumerate(uris, 1):
+
         arm_dir = st['output_directory'] / "__arming__"
         ensure_dir(arm_dir)
         temp_out = arm_dir / f"arming_{i:03d}.flac"
 
         ff_proc = start_ffmpeg(
-            st['ffmpeg_path'], st['audio_device'], max(10.0, 3600.0), temp_out, st['default_format']
+            st['ffmpeg_path'], st['audio_device'], max(10.0, 3600.0),
+            temp_out, st['default_format']
         )
         armed_start_iso = datetime.now(timezone.utc).isoformat()
 
@@ -163,11 +167,17 @@ def play_and_record_playlist(sp: Spotify, playlist_url: str, st: Settings):
             continue
 
         time.sleep(0.25)
-        meta_now = current_track(sp) or {"name": "Unknown Title", "artist_str": "Unknown Artist", "duration_ms": 0}
+        meta_now = current_track(sp) or {
+            "name": "Unknown Title",
+            "artist_str": "Unknown Artist",
+            "duration_ms": 0
+        }
 
         if st['organize_by_artist_album']:
-            artist_folder = sanitize_for_filesystem((meta_now.get('artists') or ['Unknown Artist'])[0])
-            album_folder  = sanitize_for_filesystem(meta_now.get('album', 'Unknown Album'))
+            artist_folder = sanitize_for_filesystem(
+                (meta_now.get('artists') or ['Unknown Artist'])[0])
+            album_folder = sanitize_for_filesystem(
+                meta_now.get('album', 'Unknown Album'))
             target_dir = st['output_directory'] / artist_folder / album_folder
         else:
             target_dir = st['output_directory']
@@ -183,12 +193,14 @@ def play_and_record_playlist(sp: Spotify, playlist_url: str, st: Settings):
         banner = Text.from_markup(f"""
 [bold sky_blue1]Start:[/bold sky_blue1] {escape(pretty_artist)} - {escape(pretty_title)} ({fmt_upper})
 [bold sky_blue1]To:[/bold sky_blue1] {escape(relative)}
-[bold sky_blue1]Target duration (API±buf):[/bold sky_blue1] ~{(float(meta_now.get('duration_ms',0))/1000 + float(st['recording_buffer_seconds'])):.1f}s
+[bold sky_blue1]Target duration (API±buf):[/bold sky_blue1] ~{(float(meta_now.get('duration_ms', 0))/1000 + float(st['recording_buffer_seconds'])):.1f}s
 """)
-        console.print(Panel(banner, title="[white]Recording Initiated[/white]", border_style="cyan", expand=False))
+        console.print(Panel(banner, title="[white]Recording Initiated[/white]",
+                            border_style="cyan", expand=False))
 
         current_ffmpeg_process = ff_proc
-        expected = (float(meta_now.get('duration_ms',0) or 0)/1000.0) + float(st['recording_buffer_seconds'])
+        expected = (float(meta_now.get('duration_ms', 0) or 0) / 1000.0) + \
+                   float(st['recording_buffer_seconds'])
         current_recording_info = {
             'process_obj': ff_proc,
             'track_id': meta_now.get('id'),

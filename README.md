@@ -17,23 +17,21 @@
 
 ## ✨ Features
 
-- 🎵 Real-Time Recording (FLAC)
-- 🎯 Better support for albums/playlists, now every track is treated like they're singles
-- 🎼 Metadata Embedding: title, artist, album, and cover art
-- ⚙️ Background Finalization for smooth capture
-- 📁 File Organization: Artist/Album/Track
-- 🧹 Audio Header Cleanup
-- 🔧 Config File and CLI Argument Support
-- 💬 Rich Terminal UI (`rich`)
-- 🖥️ Cross-Platform: Windows, macOS, Linux
+- Real-Time Recording (FLAC)
+- Better support for albums/playlists, now every track is treated like they're singles
+- Metadata Embedding: title, artist, album, and cover art
+- Background Finalization for smooth capture
+- File Organization: Artist/Album/Track
+- Audio Header Cleanup
+- Config File and CLI Argument Support
+- Rich Terminal UI (`rich`)
+- Cross-Platform: Windows, macOS, Linux
 
 ---
 
 The Changes
 
 ## 💻 Installation Guides
-
-### 🪟 Windows
 
 1. Install **Python 3.7+** from [python.org](https://www.python.org/downloads/windows/)
 2. Install **FFmpeg**:
@@ -45,73 +43,11 @@ The Changes
    git clone https://github.com/theafterglow/Aurora_Recorder.git
    cd Aurora_Recorder
    python3 -m venv venv
-   venv\Scripts\python aurora_recorder.py (--album/playlist)
+   venv\Sripts\python -m pip install -r requirements.txt
    ```
----
-
-### 🍏 macOS
-
-1. Install **Python 3.7+** (via [Homebrew](https://brew.sh/) or [python.org](https://www.python.org/downloads/macos/))
-2. Install **FFmpeg**:
-   ```bash
-   brew install ffmpeg
-   ```
-3. Install **BlackHole (2ch)** via [BlackHole GitHub](https://github.com/ExistentialAudio/BlackHole)
-4. Set Spotify output to BlackHole in System Preferences > Sound > Output
-5. Clone and install dependencies:
-   ```bash
-   git clone https://github.com/theafterglow/Aurora_Recorder.git
-   cd Aurora_Recorder
-   pip install -r requirements.txt
-   ```
-6. Run the script:
-   ```bash
-   python aurora_recorder.py
-   ```
-
----
-
-### 🐧 Linux (PulseAudio)
-
-1. Install **Python 3.7+**, `ffmpeg`, and `pavucontrol`:
-   ```bash
-   sudo apt update && sudo apt install python3 ffmpeg pavucontrol python3-pip
-   pip install spotipy requests mutagen rich
-   ```
-2. Load PulseAudio null sink:
-   ```bash
-   pactl load-module module-null-sink sink_name=spytorec_sink
-   ```
-3. Set Spotify output to **Monitor of spytorec_sink** using `pavucontrol`
-4. Clone repo and run:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/aurora_recorder.git
-   cd aurora_recorder
-   python3 aurora_recorder.py
-   ```
-
----
-
-## 🛠️ Usage & CLI
-
-```bash
-python aurora_recorder.py [COMMAND] [OPTIONS]
-```
-
-### ▶️ `record` (or default)
-Records and saves current Spotify track with metadata.
-
-### 🎙️ `list-devices`
-Lists FFmpeg-detected audio input devices.
-
-### 🔐 `test-auth`
-Tests Spotify API credentials and shows current playback info.
-
----
-
-## 🧪 Example Commands
-
----
+`venv\Sripts\python aurora_recorder.py text_file.txt` will play & record the tracks, albums and playlists
+`venv\Sripts\python aurora_recorder.py --playlist/album` will play & record the album/playlist
+`venv\Sripts\python aurora_recorder.py track_link` will play & record the given track only
 
 ## 📁 Output Features
 
