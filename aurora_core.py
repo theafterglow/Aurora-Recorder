@@ -1,7 +1,6 @@
-# aurora_core.py
-
 import re
 import queue
+import time
 import typing as t
 import threading
 import traceback
@@ -15,7 +14,7 @@ from rich.console import Console
 from rich.markup import escape
 from rich.prompt import Prompt
 
-SCRIPT_VERSION = "2.0"
+SCRIPT_VERSION = "2.1"
 SPOTIPY_REDIRECT_URI = "http://127.0.0.1:8888/callback"
 SPOTIPY_SCOPE = (
     "user-read-playback-state "
@@ -78,7 +77,7 @@ def ensure_default_config(path: Path) -> None:
         "polling_interval_seconds": "0.35",
         "audio_device": "audio=CABLE Output (VB-Audio Virtual Cable)",
         "ffmpeg_path": "ffmpeg",
-        "min_duration_seconds": "25",
+        "min_duration_seconds": "30",
         "recording_buffer_seconds": "-0.20",
         "skip_existing_file": "true",
         "organize_by_artist_album": "true",
@@ -89,6 +88,14 @@ def ensure_default_config(path: Path) -> None:
     }
     with open(path, "w", encoding="utf-8") as f:
         cfg.write(f)
+
+def safe_spotify_call(func, *args, retries=5, delay=12, **kwargs):
+    for attempt in range(1, retries + 1):
+        try:
+            return func(*args, **kwargs)
+
+        except Exception as e:
+            console.print(f"[red]Spotify API error:[/red] {e}")
 
 def read_settings() -> Settings:
     ensure_default_config(CONFIG_FILE)
@@ -140,7 +147,7 @@ def get_spotify_client() -> Spotify:
 
 def current_track(sp: Spotify) -> t.Optional[dict]:
     try:
-        pb = sp.current_playback()
+        pb = safe_spotify_call(sp.current_playback)
         if not pb:
             return None
 
